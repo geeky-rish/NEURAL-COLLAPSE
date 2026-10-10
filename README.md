@@ -145,7 +145,7 @@ NEURAL-COLLAPSE/
 ### Step-by-Step Installation Instructions
 1.  **Clone the Repository**:
     ```bash
-    git clone https://github.com/amaanali70/neural-collapse.git
+    git clone https://github.com/geeky-rish/NEURAL-COLLAPSE.git
     cd NEURAL-COLLAPSE
     ```
 2.  **Set Up Virtual Environment**:
@@ -237,7 +237,7 @@ To compile and package the results for distribution:
     ```bash
     python -m experiments.plot_existing_results
     ```
-2.  Open [FINAL_REPORT.html](file:///d:/dl/NEURAL-COLLAPSE/FINAL_REPORT.html) in your browser and select **Print to PDF** to output a print-ready report.
+2.  Open [FINAL_REPORT.html](FINAL_REPORT.html) in your browser and select **Print to PDF** to output a print-ready report.
 
 
 ## Contributing
