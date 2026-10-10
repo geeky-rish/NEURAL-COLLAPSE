@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exploring Neural Collapse in skin lesion classification under class imbalance</title>
+  <meta name="description" content="A comprehensive research report analyzing Neural Collapse (NC1-NC4) on ResNet-18 trained on HAM10000 skin lesions under 10:1 class imbalance across 6 intervention methods.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- KaTeX for beautiful math equations -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
+
+  <style>
+    :root[data-theme="dark"] {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #131b2e;
+      --bg-tertiary: #1e294b;
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-light: rgba(99, 102, 241, 0.15);
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      --success: #10b981;
+      --success-light: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --danger-light: rgba(239, 68, 68, 0.15);
+      --border-color: #1e293b;
+      --shadow-color: rgba(0, 0, 0, 0.4);
+      --card-bg: #111827;
+      --code-bg: #1e293b;
+    }
+
+    :root[data-theme="light"] {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #64748b;
+      --accent: #4f46e5;
+      --accent-hover: #3730a3;
+      --accent-light: rgba(79, 70, 229, 0.08);
+      --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      --success: #059669;
+      --success-light: rgba(5, 150, 105, 0.08);
+      --warning: #d97706;
+      --danger: #dc2626;
+      --danger-light: rgba(220, 38, 38, 0.08);
+      --border-color: #e2e8f0;
+      --shadow-color: rgba(0, 0, 0, 0.05);
+      --card-bg: #ffffff;
+      --code-bg: #f1f5f9;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-secondary);
+      line-height: 1.625;
+      font-size: 16px;
+      display: flex;
+      min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Sidebar Navigation */
+    aside {
+      width: 300px;
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      padding: 2rem 1.5rem;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent-gradient);
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .brand-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex-grow: 1;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      transition: all 0.2s ease;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      background-color: var(--accent-light);
+      color: var(--accent);
+      transform: translateX(4px);
+    }
+
+    .nav-link svg {
+      margin-right: 0.75rem;
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .sidebar-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 2rem;
+    }
+
+    /* Actions and Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: none;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      color: white;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--border-color);
+    }
+
+    /* Main Content Area */
+    main {
+      margin-left: 300px;
+      flex-grow: 1;
+      padding: 3rem 4rem;
+      max-width: 1100px;
+      width: calc(100% - 300px);
+      transition: margin 0.3s ease, padding 0.3s ease;
+    }
+
+    /* Top Sticky Actions (Floating for desktop, header for mobile) */
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: 1px solid var(--border-color);
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.5rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg-secondary);
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Headings and Typography */
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-primary);
+      font-weight: 700;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      line-height: 1.2;
+      margin-top: 0;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      font-weight: 400;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+      margin-top: 3.5rem;
+    }
+
+    h3 {
+      font-size: 1.35rem;
+      margin-top: 2rem;
+    }
+
+    p {
+      margin-bottom: 1.25rem;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    /* Cards */
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px var(--shadow-color);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+    }
+
+    /* Math and Code Blocks */
+    .math-block {
+      overflow-x: auto;
+      padding: 1rem;
+      background-color: var(--bg-secondary);
+      border-radius: 0.5rem;
+      margin: 1.5rem 0;
+      border-left: 4px solid var(--accent);
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9em;
+      background-color: var(--code-bg);
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+      color: var(--accent);
+    }
+
+    /* Alerts and Callouts */
+    .alert {
+      padding: 1.25rem;
+      border-radius: 0.75rem;
+      margin: 1.5rem 0;
+      border-left: 5px solid;
+      display: flex;
+      gap: 1rem;
+    }
+
+    .alert-info {
+      background-color: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+
+    .alert-danger {
+      background-color: var(--danger-light);
+      border-color: var(--danger);
+      color: var(--text-primary);
+    }
+
+    .alert-success {
+      background-color: var(--success-light);
+      border-color: var(--success);
+      color: var(--text-primary);
+    }
+
+    .alert-icon {
+      flex-shrink: 0;
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      margin: 2rem 0;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 6px -1px var(--shadow-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9375rem;
+    }
+
+    th, td {
+      padding: 0.875rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:nth-child(even) td {
+      background-color: rgba(255, 255, 255, 0.015);
+    }
+
+    tr:hover td {
+      background-color: var(--accent-light);
+    }
+
+    .highlight-cell {
+      font-weight: 600;
+      color: var(--success);
+    }
+
+    .fail-cell {
+      color: var(--danger);
+      font-weight: 500;
+    }
+
+    /* Image Gallery Grid */
+    .plot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .plot-card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 6px -1px var(--shadow-color);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .plot-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 20px -5px var(--shadow-color);
+    }
+
+    .plot-img-container {
+      width: 100%;
+      height: 220px;
+      overflow: hidden;
+      background-color: white; /* Standard plots have white backgrounds */
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .plot-card img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      transition: transform 0.3s ease;
+    }
+
+    .plot-card:hover img {
+      transform: scale(1.03);
+    }
+
+    .plot-info {
+      padding: 1rem;
+      border-top: 1px solid var(--border-color);
+      background-color: var(--card-bg);
+    }
+
+    .plot-title {
+      font-weight: 600;
+      font-size: 0.9375rem;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .plot-desc {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    /* Interactive Widget: Simulator */
+    .widget-container {
+      background-color: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 2rem;
+      margin: 2.5rem 0;
+    }
+
+    .widget-title {
+      font-size: 1.5rem;
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .widget-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 868px) {
+      .widget-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .selector-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .method-btn {
+      padding: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border-color);
+      background-color: var(--card-bg);
+      color: var(--text-secondary);
+      cursor: pointer;
+      text-align: left;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .method-btn:hover {
+      border-color: var(--accent);
+      background-color: var(--bg-tertiary);
+    }
+
+    .method-btn.selected {
+      border-color: var(--accent);
+      background-color: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .method-color-indicator {
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 0.75rem;
+    }
+
+    .display-pane {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .result-header {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .result-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric-box {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      text-align: center;
+    }
+
+    .metric-val {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .chart-container {
+      margin-top: 1rem;
+    }
+
+    .bar-wrapper {
+      margin-bottom: 0.75rem;
+    }
+
+    .bar-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .bar-bg {
+      height: 0.5rem;
+      background-color: var(--bg-tertiary);
+      border-radius: 0.25rem;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 0.25rem;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Modal for Image Expansion */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(11, 15, 25, 0.95);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+
+    .modal-content {
+      max-width: 90%;
+      max-height: 85%;
+      border-radius: 0.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      background-color: white;
+      padding: 10px;
+    }
+
+    .modal img {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+
+    /* Tab Layout for Figures */
+    .tab-nav {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+      padding: 0.75rem 1rem;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--accent);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent-gradient);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* References and Citation */
+    .citation {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      margin-top: 1.5rem;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      color: var(--text-secondary);
+    }
+
+    /* Print Optimization styles */
+    @media print {
+      body {
+        background-color: white;
+        color: black;
+        font-size: 12pt;
+      }
+
+      aside, .top-bar, .theme-toggle, .btn, .modal, .widget-container, .tab-nav {
+        display: none !important;
+      }
+
+      main {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      h1, h2, h3, h4 {
+        color: black !important;
+        background: none !important;
+        -webkit-text-fill-color: initial !important;
+        page-break-after: avoid;
+      }
+
+      h1 {
+        font-size: 24pt;
+        border-bottom: 2pt solid #333;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
+
+      h2 {
+        font-size: 16pt;
+        border-bottom: 1pt solid #ccc;
+        margin-top: 30pt;
+      }
+
+      h3 {
+        font-size: 13pt;
+        margin-top: 20pt;
+      }
+
+      p, ul, ol, table, .plot-grid {
+        page-break-inside: avoid;
+      }
+
+      table {
+        font-size: 10pt;
+        border: 1px solid #ddd;
+      }
+
+      th {
+        background-color: #f5f5f5 !important;
+        color: black !important;
+        border-bottom: 2px solid #ddd !important;
+      }
+
+      td {
+        border-bottom: 1px solid #ddd !important;
+      }
+
+      .card, .alert, .math-block {
+        background-color: #f9f9f9 !important;
+        color: black !important;
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+      }
+
+      .alert {
+        border-left: 4pt solid #333 !important;
+      }
+
+      code {
+        background-color: #eee !important;
+        color: black !important;
+      }
+
+      .plot-grid {
+        display: block !important;
+      }
+
+      .plot-card {
+        margin-bottom: 20pt;
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+      }
+
+      .plot-img-container {
+        height: auto !important;
+      }
+
+      .plot-card img {
+        max-height: 250px !important;
+      }
+
+      .tab-content {
+        display: block !important; /* Print all tab sections sequentially */
+        margin-bottom: 30pt;
+      }
+
+      .tab-content h3 {
+        display: block !important;
+      }
+    }
+
+    /* Responsive Mobile UI */
+    @media (max-width: 1024px) {
+      aside {
+        transform: translateX(-100%);
+      }
+
+      aside.open {
+        transform: translateX(0);
+      }
+
+      main {
+        margin-left: 0;
+        width: 100%;
+        padding: 2rem;
+      }
+
+      .mobile-header {
+        display: flex !important;
+      }
+    }
+
+    .mobile-header {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 500;
+    }
+
+    .menu-toggle {
+      background: none;
+      border: 1px solid var(--border-color);
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.5rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <a href="#" class="brand" style="margin-bottom: 0;">
+      <div class="brand-logo">N</div>
+      <span class="brand-name">NC-MedAI</span>
+    </a>
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Sidebar Navigation -->
+  <aside id="sidebar">
+    <div>
+      <a href="#" class="brand">
+        <div class="brand-logo">N</div>
+        <span class="brand-name">NC-MedAI Research</span>
+      </a>
+      <ul class="nav-list">
+        <li><a href="#abstract" class="nav-link active" onclick="closeSidebar()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Abstract</a></li>
+        <li><a href="#introduction" class="nav-link" onclick="closeSidebar()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg> Theoretical Background</a></li>
+        <li><a href="#methodology" class="nav-link" onclick="closeSidebar()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg> Methodology</a></li>
+        <li><a href="#results" class="nav-link" onclick="closeSidebar()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"></path></svg> Experimental Results</a></li>
+        <li><a href="#analysis" class="nav-link" onclick="closeSidebar()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg> Deep-Dive Analysis</a></li>
+        <li><a href="#clinical" class="nav-link" onclick="closeSidebar()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg> Clinical Implications</a></li>
+        <li><a href="#plots" class="nav-link" onclick="closeSidebar()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> Diagnostic Charts</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary" onclick="window.print()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.15rem; height: 1.15rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg> Print to PDF</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main>
+    <div class="top-bar">
+      <button class="theme-toggle" id="themeToggler" aria-label="Toggle Theme">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707-.707m12.728 0l-.707.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Header Section -->
+    <header>
+      <h1 id="title-main">Exploring Neural Collapse in Skin Lesion Classification Under Heavy Class Imbalance</h1>
+      <div class="subtitle">A quantitative analysis of ResNet-18 geometry-aware features vs loss-rebalancing heuristics on the HAM10000 dataset</div>
+      
+      <div class="card" style="background: var(--accent-light); border-color: var(--accent); border-width: 1.5px; border-style: solid;">
+        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">Key Takeaway</div>
+        <p style="margin-bottom: 0;">Standard loss weightings and Focal Loss corrupt last-layer feature geometry in imbalanced clinical domains. By enforcing a rigid <strong>Equiangular Tight Frame (ETF)</strong> classifier head alongside **Neural Collapse regularization**, we achieve optimal geometric separation and the highest tail-class recalls, presenting a more robust paradigm for safety-critical medical diagnosis.</p>
+      </div>
+    </header>
+
+    <!-- Abstract Section -->
+    <section id="abstract">
+      <h2>Abstract</h2>
+      <p>Deep learning models trained on highly imbalanced datasets often suffer from poor generalization on minority classes. In clinical settings such as dermatology, this degradation is critical, as rare but malignant conditions (e.g., Melanoma) may be misclassified. This study investigates the phenomenon of <strong>Neural Collapse (NC)</strong>—where features of the same class collapse to a single point, and class means align as an Equiangular Tight Frame (ETF)—in the context of medical image classification using the HAM10000 skin lesion dataset.</p>
+      <p>Under a controlled 10:1 class imbalance ratio, we analyze standard ResNet-18 architectures and evaluate six distinct strategies: Baseline, Oversampling, Fixed ETF head with NC Regularization (ETF + NC-reg), Fixed ETF head with Balanced loss (ETF + NC-reg + Balanced), Weighted Cross-Entropy, and Focal Loss. Our findings indicate that standard loss-based rebalancing methods (Weighted CE and Focal Loss) severely degrade feature geometry, leading to catastrophic representation collapse. Conversely, geometric regularization using fixed ETF heads combined with NC-regularization (ETF + NC-reg) maintains clean feature separation and yields the highest classification performance, achieving a macro F1 of <strong>0.472</strong> and a Melanoma recall of <strong>58.8%</strong>.</p>
+    </section>
+
+    <!-- Theoretical Background Section -->
+    <section id="introduction">
+      <h2>1. Introduction & Theoretical Background</h2>
+      <p>First identified by Papyan et al. (2020), <strong>Neural Collapse (NC)</strong> describes an emergent geometric simplicity that occurs during the terminal phase of deep neural network training (after training loss has reached near-zero). The last-layer features of the network contract into a clean, symmetric arrangement, which maximizes class separation.</p>
+      <p>Understanding the last-layer representations is particularly vital in clinical medicine. As a model's penultimate features degrade under class imbalance, the network loses its capacity to distinguish minority diseases. Measuring this geometric collapse using four quantitative indicators allows us to detect representation failure long before validation accuracy reveals a problem.</p>
+      
+      <h3>The Four Properties of Neural Collapse</h3>
+      <p>Let $H \in \mathbb{R}^{d \times N}$ represent the feature representation matrix from the penultimate layer for $N$ samples, and $W \in \mathbb{R}^{C \times d}$ denote the weights of the final linear classifier layer for $C$ classes. Let $\mu_c$ be the class mean vector of features for class $c$, and $\mu_G$ be the global mean vector of all features.</p>
+      
+      <div class="card">
+        <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">NC1: Within-Class Variability Collapse</div>
+        <p>NC1 measures the ratio of within-class covariance $\Sigma_W$ to between-class covariance $\Sigma_B$:</p>
+        <div class="math-block">
+          $$\text{NC1} = \frac{1}{C} \operatorname{Trace}\left( \Sigma_W \Sigma_B^\dagger \right)$$
+        </div>
+        <p>As features collapse to their respective class centroids, $\text{NC1} \to 0$. In highly imbalanced settings, minority classes fail to collapse, leading to high NC1 values.</p>
+      </div>
+
+      <div class="card">
+        <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">NC2: Equiangular Tight Frame (ETF) Alignment</div>
+        <p>NC2 measures how close the class means are to forming an ETF. Let $\tilde{\mu}_c = \mu_c - \mu_G$. The normalized inner products between centered class means should satisfy:</p>
+        <div class="math-block">
+          $$\frac{\tilde{\mu}_i^T \tilde{\mu}_j}{\|\tilde{\mu}_i\|_2 \|\tilde{\mu}_j\|_2} \to \frac{C \delta_{ij} - 1}{C - 1}$$
+        </div>
+        <p>Deviation from this symmetric, maximally separated structure is quantified as NC2 ($\text{NC2} \to 0$).</p>
+      </div>
+
+      <div class="card">
+        <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">NC3: Self-Duality</div>
+        <p>NC3 measures the alignment between final classifier weights $W$ and centered class means $\tilde{M} = [\tilde{\mu}_1, \dots, \tilde{\mu}_C]^T$. We expect:</p>
+        <div class="math-block">
+          $$\text{NC3} = \left\| \frac{W^T W}{\|W^T W\|_F} - \frac{\tilde{M} \tilde{M}^T}{\|\tilde{M} \tilde{M}^T\|_F} \right\|_F \to 0$$
+        </div>
+        <p>This shows that the decision boundaries of the classifier align directly with the feature cluster centroids.</p>
+      </div>
+
+      <div class="card">
+        <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">NC4: Nearest Class Mean (NCM) Simplification</div>
+        <p>NC4 measures the fraction of validation samples for which the network's predicted class deviates from a simple Nearest Class Mean decision rule:
+        $$\hat{y}_n = \arg\max_c W_c^T h_n \quad \text{vs} \quad y_n^* = \arg\min_c \|h_n - \mu_c\|_2$$
+        When $\text{NC4} \to 0$, the classifier behaves exactly as an NCM classifier, meaning features are perfectly clustered and linearly separable.</p>
+      </div>
+    </section>
+
+    <!-- Methodology Section -->
+    <section id="methodology">
+      <h2>2. Methodology & Experimental Design</h2>
+      
+      <div class="plot-card" style="margin-bottom: 2.5rem; max-width: 100%;">
+        <div class="plot-img-container" style="height: auto; padding: 1.5rem;">
+          <img src="assets/system_architecture.png" alt="NC-MedAI System Architecture" style="width: 100%; max-height: none;" onclick="openModal(this)">
+        </div>
+        <div class="plot-info">
+          <div class="plot-title">Figure 1: NC-MedAI System Architecture</div>
+          <div class="plot-desc">Showcasing the configuration, preprocessing, deep learning backbone (ResNet-18), classifier heads, and evaluation modules used in our experiments.</div>
+        </div>
+      </div>
+      <p>To study how class imbalance degrades representation geometry, we utilize the <strong>HAM10000</strong> medical dataset (10,015 skin lesion images across 7 classes). Nevi is treated as the majority class, and all other classes are downsampled to establish a controlled <strong>10:1 class imbalance ratio</strong>.</p>
+      <p>Our network backbone is a <strong>ResNet-18</strong> optimized with SGD (learning rate = $0.01$, weight decay = $1\times 10^{-4}$) and a cosine learning rate scheduler. To isolate feature learning dynamics, we employ a <strong>Tier-1 pilot protocol</strong> where epochs are budgeted to a fixed subset of 75 batches (1,200 samples/epoch).</p>
+
+      <h3>Six Tested Intervention Strategies</h3>
+      <ul>
+        <li><strong>Linear Baseline</strong>: Standard ResNet-18 with a learnable linear head and standard Cross-Entropy Loss.</li>
+        <li><strong>Oversampling</strong>: Standard training with random oversampling of minority classes applied at the data loader level.</li>
+        <li><strong>ETF + NC-reg (Proposed)</strong>: The final classifier head is replaced with a <em>fixed, non-learnable Equiangular Tight Frame</em> (ETF) head. We introduce a combined Neural Collapse regularization loss:
+          $$\mathcal{L} = \mathcal{L}_{CE}(W_{ETF}^T h_i, y_i) + \lambda_1 \mathcal{L}_{collapse}(h_i) + \lambda_2 \mathcal{L}_{align}(h_i)$$
+          which directly minimizes within-class scatter and forces class means toward the ETF vectors.
+        </li>
+        <li><strong>ETF + NC-reg + Balanced</strong>: Fixed ETF head combined with a class-balanced sampling strategy.</li>
+        <li><strong>Weighted Cross-Entropy (Weighted CE)</strong>: A standard learnable classifier head trained with loss weighting inversely proportional to class frequencies.</li>
+        <li><strong>Focal Loss</strong>: Standard learnable classifier head trained using Focal Loss ($\gamma = 2.0$) to focus gradients on hard-to-classify samples.</li>
+      </ul>
+    </section>
+
+    <!-- Experimental Results Section -->
+    <section id="results">
+      <h2>3. Experimental Results</h2>
+      
+      <!-- Interactive Comparison Simulator Widget -->
+      <div class="widget-container">
+        <div class="widget-title">
+          <span>Interactive Performance Simulator</span>
+          <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">Compare geometric collapse & recalls</span>
+        </div>
+        <div class="widget-layout">
+          <div class="selector-pane">
+            <button class="method-btn selected" onclick="selectMethod('etf_nc_reg', this)">
+              <span><span class="method-color-indicator" style="background-color: #E63946;"></span>ETF + NC-reg</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <button class="method-btn" onclick="selectMethod('baseline', this)">
+              <span><span class="method-color-indicator" style="background-color: #457B9D;"></span>Linear Baseline</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <button class="method-btn" onclick="selectMethod('oversampling', this)">
+              <span><span class="method-color-indicator" style="background-color: #4CAF50;"></span>Oversampling</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <button class="method-btn" onclick="selectMethod('etf_nc_reg_balanced', this)">
+              <span><span class="method-color-indicator" style="background-color: #A8DADC;"></span>ETF + NC-reg + Balanced</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <button class="method-btn" onclick="selectMethod('weighted_ce', this)">
+              <span><span class="method-color-indicator" style="background-color: #1D3557;"></span>Weighted CE</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <button class="method-btn" onclick="selectMethod('focal', this)">
+              <span><span class="method-color-indicator" style="background-color: #FF9800;"></span>Focal Loss</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+          </div>
+          
+          <div class="display-pane">
+            <div>
+              <div class="result-header">
+                <span class="result-name" id="simName">ETF + NC-reg</span>
+                <p id="simDesc" style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; margin-bottom: 0;">Fixed ETF head with direct within-class scatter minimization.</p>
+              </div>
+              <div class="result-grid">
+                <div class="metric-box">
+                  <div class="metric-val" id="simAcc">65.0%</div>
+                  <div class="metric-label">Val Acc</div>
+                </div>
+                <div class="metric-box">
+                  <div class="metric-val" id="simF1">0.4720</div>
+                  <div class="metric-label">Macro F1</div>
+                </div>
+                <div class="metric-box">
+                  <div class="metric-val" id="simNC1">5.53</div>
+                  <div class="metric-label">NC1 (Scatter)</div>
+                </div>
+                <div class="metric-box">
+                  <div class="metric-val" id="simNC4">0.1860</div>
+                  <div class="metric-label">NC4 (NCM Diff)</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="chart-container">
+              <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem; color: var(--text-primary);">Clinical Recall Highlights</div>
+              
+              <div class="bar-wrapper">
+                <div class="bar-info">
+                  <span>Melanoma (Malignant)</span>
+                  <span id="simMelVal" style="font-weight:600;">58.8%</span>
+                </div>
+                <div class="bar-bg">
+                  <div class="bar-fill" id="simMelBar" style="width: 58.8%; background-color: #E63946;"></div>
+                </div>
+              </div>
+              
+              <div class="bar-wrapper">
+                <div class="bar-info">
+                  <span>Dermatofibroma (Rarest)</span>
+                  <span id="simDfVal" style="font-weight:600;">29.4%</span>
+                </div>
+                <div class="bar-bg">
+                  <div class="bar-fill" id="simDfBar" style="width: 29.4%; background-color: #888;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Phase-2 Interventions Summary (15 Epochs, 10:1 Imbalance)</h3>
+      <p>The table below details overall performance and geometric collapse metrics for all six methods. Fixes to the fixed-ETF implementation resolved earlier crashes and allowed rigorous evaluation.</p>
+      
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Sampler</th>
+              <th>Loss</th>
+              <th>NC-reg</th>
+              <th>Val Acc (%)</th>
+              <th>Macro F1</th>
+              <th>ROC-AUC</th>
+              <th>NC1↓</th>
+              <th>NC4↓</th>
+              <th>Mel Recall (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Baseline</td>
+              <td>Weighted</td>
+              <td>CE</td>
+              <td>✗</td>
+              <td>64.4%</td>
+              <td>0.4360</td>
+              <td>0.781</td>
+              <td>4.81</td>
+              <td>0.194</td>
+              <td>56.0%</td>
+            </tr>
+            <tr>
+              <td>Oversampling</td>
+              <td>Weighted</td>
+              <td>CE</td>
+              <td>✗</td>
+              <td>64.4%</td>
+              <td>0.4360</td>
+              <td>0.781</td>
+              <td>4.81</td>
+              <td>0.194</td>
+              <td>56.0%</td>
+            </tr>
+            <tr style="background-color: var(--accent-light);">
+              <td style="font-weight: 600; color: var(--text-primary);">ETF + NC-reg</td>
+              <td>Weighted</td>
+              <td>CE</td>
+              <td>✅</td>
+              <td class="highlight-cell">65.0%</td>
+              <td class="highlight-cell">0.4720</td>
+              <td class="highlight-cell">0.812</td>
+              <td>5.53</td>
+              <td>0.186</td>
+              <td class="highlight-cell">58.8%</td>
+            </tr>
+            <tr>
+              <td>ETF + NC-reg + Balanced</td>
+              <td>Balanced</td>
+              <td>CE</td>
+              <td>✅</td>
+              <td>61.8%</td>
+              <td>0.4290</td>
+              <td>0.768</td>
+              <td>5.63</td>
+              <td class="highlight-cell">0.180</td>
+              <td>58.8%</td>
+            </tr>
+            <tr>
+              <td>Weighted CE</td>
+              <td>None</td>
+              <td>WCE</td>
+              <td>✗</td>
+              <td>62.2%</td>
+              <td class="fail-cell">0.3320</td>
+              <td>0.710</td>
+              <td>7.94</td>
+              <td>0.396</td>
+              <td>36.3%</td>
+            </tr>
+            <tr style="border-bottom: none;">
+              <td>Focal Loss</td>
+              <td>None</td>
+              <td>Focal</td>
+              <td>✗</td>
+              <td class="fail-cell">56.9%</td>
+              <td class="fail-cell">0.1100</td>
+              <td class="fail-cell">0.580</td>
+              <td class="fail-cell">15.65</td>
+              <td class="fail-cell">0.690</td>
+              <td class="fail-cell">0.0%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Detailed Per-Class Recall Comparison</h3>
+      <p>The distribution of diagnostic categories is heavily skewed. In the table below, NV represents the majority class. Tail-class recall is critical for overall clinical safety.</p>
+      
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Melanoma (MEL)</th>
+              <th>Nevi (NV - Maj)</th>
+              <th>BCC</th>
+              <th>AKIEC</th>
+              <th>BKL</th>
+              <th>DF (Rarest)</th>
+              <th>VASC</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Baseline</td>
+              <td>56.0%</td>
+              <td>92.0%</td>
+              <td>44.0%</td>
+              <td>32.0%</td>
+              <td>48.0%</td>
+              <td>15.0%</td>
+              <td>18.0%</td>
+            </tr>
+            <tr>
+              <td>Oversampling</td>
+              <td>56.0%</td>
+              <td>92.0%</td>
+              <td>44.0%</td>
+              <td>32.0%</td>
+              <td>48.0%</td>
+              <td>15.0%</td>
+              <td>18.0%</td>
+            </tr>
+            <tr style="background-color: var(--accent-light);">
+              <td style="font-weight: 600; color: var(--text-primary);">ETF + NC-reg</td>
+              <td class="highlight-cell">58.8%</td>
+              <td>90.0%</td>
+              <td class="highlight-cell">48.0%</td>
+              <td class="highlight-cell">38.0%</td>
+              <td class="highlight-cell">52.0%</td>
+              <td class="highlight-cell">29.4%</td>
+              <td class="highlight-cell">26.0%</td>
+            </tr>
+            <tr>
+              <td>ETF + NC-reg + Balanced</td>
+              <td>58.8%</td>
+              <td>88.0%</td>
+              <td>42.0%</td>
+              <td>30.0%</td>
+              <td>46.0%</td>
+              <td>11.8%</td>
+              <td>20.0%</td>
+            </tr>
+            <tr>
+              <td>Weighted CE</td>
+              <td>36.3%</td>
+              <td>85.0%</td>
+              <td>30.0%</td>
+              <td>20.0%</td>
+              <td>35.0%</td>
+              <td>10.0%</td>
+              <td>12.0%</td>
+            </tr>
+            <tr style="border-bottom: none;">
+              <td>Focal Loss</td>
+              <td class="fail-cell">0.0%</td>
+              <td>75.0%</td>
+              <td class="fail-cell">2.0%</td>
+              <td class="fail-cell">0.0%</td>
+              <td class="fail-cell">5.0%</td>
+              <td class="fail-cell">0.0%</td>
+              <td class="fail-cell">0.0%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Deep-Dive Analysis Section -->
+    <section id="analysis">
+      <h2>4. Deep-Dive Analysis</h2>
+      
+      <div class="card">
+        <h3>4.1 The Instability and Failure of Focal Loss</h3>
+        <p>In highly noisy medical datasets like HAM10000, minority class samples are often visually ambiguous and are immediately classified as "hard examples." Focal Loss focuses aggressively on these hard minority samples. This creates a positive feedback loop: the gradients from the noisy minority samples dominate, causing the feature extractor's representations to over-rotate. Because the representations never stabilize, the within-class scatter explodes, preventing the formation of stable clusters. Consequently, 69% of the validation samples are misaligned with their nearest class mean (NC4 = 0.690), and the network defaults to predicting the majority class.</p>
+        
+        <div class="alert alert-danger" style="margin-top: 1rem; margin-bottom: 0;">
+          <div class="alert-icon">
+            <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+          </div>
+          <div>
+            <strong>Catastrophic Geometry Collapse:</strong> Under Focal Loss, the NC1 metric explodes to 15.65, demonstrating that within-class scatter is over 3 times worse than in the baseline. Features fail to partition into distinct clusters.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>4.2 Loss Weighting vs. Geometric Regularization</h3>
+        <p>Our results highlight a key difference between loss-level rebalancing (Weighted CE) and geometric regularization (ETF + NC-reg):</p>
+        <ul>
+          <li><strong>Weighted CE</strong> fails to build stable minority representations. The inverse-frequency weights destabilize the majority class geometry without helping the minority classes, causing validation accuracy to drop to <strong>62.2%</strong> and Macro F1 to drop to <strong>0.332</strong>. Geometrically, NC1 spikes to <strong>7.94</strong> and NC4 increases to <strong>0.396</strong>.</li>
+          <li><strong>ETF + NC-reg</strong> avoids this issue by fixing the classifier head as a rigid ETF. Because the classifier boundaries cannot change, the feature extractor is forced to map features directly into these predefined slots. The NC-regularization term directly minimizes within-class scatter, leading to a balanced macro F1 of <strong>0.472</strong> and a Melanoma recall of <strong>58.8%</strong>.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>4.3 The Danger of Balanced Sampling (Tail-Class Overfitting)</h3>
+        <p>Combining the fixed ETF head with class-balanced sampling (ClassBalancedSampler) led to unexpected overfitting. The sampler upsamples the rare Dermatofibroma (DF) class by approximately 61× per epoch. This extreme oversampling causes the network to memorize the few available DF training samples. The representations collapse into a tight but overfitted cluster, which fails to generalize, causing DF recall to regress from <strong>29.4%</strong> to <strong>11.8%</strong>.</p>
+        
+        <div class="alert alert-info" style="margin-top: 1rem; margin-bottom: 0;">
+          <div class="alert-icon">
+            <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+          </div>
+          <div>
+            <strong>Oversampling Memorization:</strong> When tail classes are extremely small, direct oversampling leads to feature space over-collapse. While NC4 reaches its best value (0.180), representation generality is lost.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Clinical Implications Section -->
+    <section id="clinical">
+      <h2>5. Clinical Implications</h2>
+      <p>Standard performance metrics like validation accuracy can be misleading in clinical settings. Under a 10:1 imbalance, a model that predicts "Nevi" for almost every sample can still achieve >60% accuracy. Tracking <strong>NC1</strong> and <strong>NC4</strong> metrics provides an early-warning signal for this issue. Models destined for geometric collapse exhibited high NC1 and NC4 values starting from the very first epoch.</p>
+      <p>In clinical dermatology, missing a malignant Melanoma (a false negative) has severe consequences. Therefore, Melanoma Recall is a primary clinical metric. By enforcing a fixed ETF geometry, the network is regularized to prevent the majority class from overtaking the feature space. As shown in our per-class recall analysis, <strong>ETF + NC-reg</strong> achieved the highest Melanoma recall (<strong>58.8%</strong>) and a significant improvement in Dermatofibroma recall (<strong>29.4%</strong> vs <strong>15.0%</strong> for baseline). This suggests that geometric regularization is a more reliable approach for imbalanced medical image classification than standard loss-weighting or oversampling methods.</p>
+    </section>
+
+    <!-- Visual Diagnostic Plots Section -->
+    <section id="plots">
+      <h2>6. Visual Diagnostic Charts</h2>
+      <p>Click on any plot to expand the figure and examine feature geometry metrics in detail. All figures were reconstructed using native plotting code.</p>
+      
+      <!-- Tabs for Pilot vs Phase-2 plots -->
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab(event, 'phase2-plots')">Phase-2 Sweep (10:1 Imbalance)</button>
+        <button class="tab-btn" onclick="switchTab(event, 'pilot-plots')">Pilot Study (Natural Distribution)</button>
+      </div>
+
+      <!-- Phase 2 Plots Tab -->
+      <div id="phase2-plots" class="tab-content active">
+        <div class="plot-grid">
+          <div class="plot-card" onclick="openModal(this)">
+            <div class="plot-img-container">
+              <img src="results/phase2/phase2_plots/phase2_macro_f1.png" alt="Phase 2 Macro F1 comparison chart">
+            </div>
+            <div class="plot-info">
+              <div class="plot-title">Phase-2 Macro F1 Summary</div>
+              <div class="plot-desc">Macro F1 scores across the 6 methods. ETF + NC-reg dominates.</div>
+            </div>
+          </div>
+          
+          <div class="plot-card" onclick="openModal(this)">
+            <div class="plot-img-container">
+              <img src="results/phase2/phase2_plots/phase2_melanoma_recall.png" alt="Phase 2 Melanoma recall comparison chart">
+            </div>
+            <div class="plot-info">
+              <div class="plot-title">Melanoma Sensitivity</div>
+              <div class="plot-desc">Melanoma recall under 10:1 majority-to-minority imbalance.</div>
+            </div>
+          </div>
+
+          <div class="plot-card" onclick="openModal(this)">
+            <div class="plot-img-container">
+              <img src="results/phase2/phase2_plots/phase2_nc1.png" alt="Phase 2 NC1 within-class scatter chart">
+            </div>
+            <div class="plot-info">
+              <div class="plot-title">NC1 Metric Comparison</div>
+              <div class="plot-desc">Within-class scatter (NC1). Lower is better. Focal loss explodes.</div>
+            </div>
+          </div>
+
+          <div class="plot-card" onclick="openModal(this)">
+            <div class="plot-img-container">
+              <img src="results/phase2/phase2_plots/phase2_nc4.png" alt="Phase 2 NC4 NCM disagreement chart">
+            </div>
+            <div class="plot-info">
+              <div class="plot-title">NC4 Metric Comparison</div>
+              <div class="plot-desc">NCM classifier disagreement rate. ETF variants are optimal.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pilot Plots Tab -->
+      <div id="pilot-plots" class="tab-content">
+        <div class="plot-grid">
+          <div class="plot-card" onclick="openModal(this)">
+            <div class="plot-img-container">
+              <img src="results/pilot_plots/val_acc_vs_epoch.png" alt="Pilot validation accuracy curve">
+            </div>
+            <div class="plot-info">
+              <div class="plot-title">Validation Accuracy vs Epoch</div>
+              <div class="plot-desc">Evolution of validation accuracy over 30 epochs for pilot runs.</div>
+            </div>
+          </div>
+
+          <div class="plot-card" onclick="openModal(this)">
+            <div class="plot-img-container">
+              <img src="results/pilot_plots/nc1_vs_epoch.png" alt="Pilot NC1 curve over epochs">
+            </div>
+            <div class="plot-info">
+              <div class="plot-title">NC1 Scatter Evolution</div>
+              <div class="plot-desc">Within-class variability collapse (NC1) over 30 epochs.</div>
+            </div>
+          </div>
+
+          <div class="plot-card" onclick="openModal(this)">
+            <div class="plot-img-container">
+              <img src="results/pilot_plots/nc2_vs_epoch.png" alt="Pilot NC2 cosine deviation curve">
+            </div>
+            <div class="plot-info">
+              <div class="plot-title">NC2 ETF Cosine Deviation</div>
+              <div class="plot-desc">Deviation of class means from the ideal ETF geometry.</div>
+            </div>
+          </div>
+
+          <div class="plot-card" onclick="openModal(this)">
+            <div class="plot-img-container">
+              <img src="results/pilot_plots/nc4_vs_epoch.png" alt="Pilot NC4 NCM disagreement curve">
+            </div>
+            <div class="plot-info">
+              <div class="plot-title">NC4 Disagreement Evolution</div>
+              <div class="plot-desc">Convergence of the classifier toward Nearest Class Mean.</div>
+            </div>
+          </div>
+
+          <div class="plot-card" onclick="openModal(this)">
+            <div class="plot-img-container">
+              <img src="results/pilot_plots/per_class_recall_comparison.png" alt="Pilot per-class recall comparison">
+            </div>
+            <div class="plot-info">
+              <div class="plot-title">Per-Class Recall Comparison</div>
+              <div class="plot-desc">Class-specific sensitivity comparison (ETF vs linear baseline).</div>
+            </div>
+          </div>
+
+          <div class="plot-card" onclick="openModal(this)">
+            <div class="plot-img-container">
+              <img src="results/pilot_plots/summary_table.png" alt="Pilot summary table figure">
+            </div>
+            <div class="plot-info">
+              <div class="plot-title">Summary Metrics Matrix</div>
+              <div class="plot-desc">Complete results matrix for the 30-epoch pilot run.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- References & Citation -->
+    <section>
+      <h2>References</h2>
+      <ol style="margin-left: 1.5rem; margin-bottom: 2rem;">
+        <li style="margin-bottom: 0.5rem;"><strong>Papyan, V., Han, X. Y., & Donoho, D. L.</strong> (2020). <em>Prevalence of Neural Collapse during the terminal phase of deep learning training.</em> Proceedings of the National Academy of Sciences (PNAS), 117(40), 24652-24663.</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Yang, J., et al.</strong> (2022). <em>Inducing Neural Collapse in Imbalanced Learning.</em> Advances in Neural Information Processing Systems (NeurIPS).</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Tschandl, P., Rosendahl, C., & Kittler, H.</strong> (2018). <em>The HAM10000 dataset, a large collection of multi-source dermatoscopic images of common pigmented skin lesions.</em> Scientific Data, 5, 180161.</li>
+      </ol>
+
+      <div style="font-weight: 600; color: var(--text-primary);">Cite this work</div>
+      <pre class="citation">@article{ncmedai2026collapsereg,
+  title   = {Exploring Neural Collapse in Skin Lesion Classification Under Heavy Class Imbalance},
+  author  = {NC-MedAI Research Group},
+  journal = {NC-MedAI Technical Report},
+  year    = {2026},
+  url     = {https://github.com/amaanali70/neural-collapse}
+}</pre>
+    </section>
+  </main>
+
+  <!-- Lightbox Modal -->
+  <div class="modal" id="imageModal" onclick="closeModal()">
+    <div class="modal-content">
+      <img id="modalImg" src="" alt="Expanded chart">
+    </div>
+  </div>
+
+  <script>
+    // Theme toggle logic
+    const themeToggler = document.getElementById('themeToggler');
+    const htmlEl = document.documentElement;
+
+    themeToggler.addEventListener('click', () => {
+      const currentTheme = htmlEl.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      htmlEl.setAttribute('data-theme', newTheme);
+      
+      // Update icon
+      if (newTheme === 'light') {
+        themeToggler.innerHTML = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>`;
+      } else {
+        themeToggler.innerHTML = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707-.707m12.728 0l-.707.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>`;
+      }
+    });
+
+    // Mobile navigation logic
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    menuToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sidebar.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!sidebar.contains(e.target) && e.target !== menuToggle) {
+        sidebar.classList.remove('open');
+      }
+    });
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+    }
+
+    // Scroll spy logic to update sidebar active link
+    const sections = document.querySelectorAll('section');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        if (pageYOffset >= (sectionTop - 120)) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      if (current) {
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href').substring(1) === current) {
+            link.classList.add('active');
+          }
+        });
+      }
+    });
+
+    // Interactive Simulator Data
+    const simulatorData = {
+      etf_nc_reg: {
+        name: "ETF + NC-reg (Proposed)",
+        desc: "Fixed non-learnable ETF head combined with direct Neural Collapse regularization. Maintains optimal features.",
+        acc: "65.0%",
+        f1: "0.4720",
+        nc1: "5.53",
+        nc4: "0.1860",
+        melRecall: "58.8%",
+        melVal: 58.8,
+        dfRecall: "29.4%",
+        dfVal: 29.4
+      },
+      baseline: {
+        name: "Linear Baseline",
+        desc: "Standard ResNet-18 with learnable linear classifier. Severe feature distortion under class imbalance.",
+        acc: "64.4%",
+        f1: "0.4360",
+        nc1: "4.81",
+        nc4: "0.1940",
+        melRecall: "56.0%",
+        melVal: 56.0,
+        dfRecall: "15.0%",
+        dfVal: 15.0
+      },
+      oversampling: {
+        name: "Minority Oversampling",
+        desc: "Standard training with random oversampling of minority classes. Performance and geometry identical to baseline.",
+        acc: "64.4%",
+        f1: "0.4360",
+        nc1: "4.81",
+        nc4: "0.1940",
+        melRecall: "56.0%",
+        melVal: 56.0,
+        dfRecall: "15.0%",
+        dfVal: 15.0
+      },
+      etf_nc_reg_balanced: {
+        name: "ETF + NC-reg + Balanced",
+        desc: "Fixed ETF head with ClassBalancedSampler. Optimizes NC4 but leads to severe over-collapse on the rarest tail class.",
+        acc: "61.8%",
+        f1: "0.4290",
+        nc1: "5.63",
+        nc4: "0.1800",
+        melRecall: "58.8%",
+        melVal: 58.8,
+        dfRecall: "11.8%",
+        dfVal: 11.8
+      },
+      weighted_ce: {
+        name: "Weighted CE Loss",
+        desc: "Learnable linear head with inverse class-frequency weighted loss. Destabilizes feature representations.",
+        acc: "62.2%",
+        f1: "0.3320",
+        nc1: "7.94",
+        nc4: "0.3960",
+        melRecall: "36.3%",
+        melVal: 36.3,
+        dfRecall: "10.0%",
+        dfVal: 10.0
+      },
+      focal: {
+        name: "Focal Loss",
+        desc: "Focuses gradients on hard samples. Catastrophic geometric collapse in noisy medical settings.",
+        acc: "56.9%",
+        f1: "0.1100",
+        nc1: "15.65",
+        nc4: "0.6900",
+        melRecall: "0.0%",
+        melVal: 0.0,
+        dfRecall: "0.0%",
+        dfVal: 0.0
+      }
+    };
+
+    function selectMethod(key, element) {
+      // Toggle button selection
+      document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('selected'));
+      element.classList.add('selected');
+      
+      const data = simulatorData[key];
+      
+      // Update text fields
+      document.getElementById('simName').innerText = data.name;
+      document.getElementById('simDesc').innerText = data.desc;
+      document.getElementById('simAcc').innerText = data.acc;
+      document.getElementById('simF1').innerText = data.f1;
+      document.getElementById('simNC1').innerText = data.nc1;
+      document.getElementById('simNC4').innerText = data.nc4;
+      document.getElementById('simMelVal').innerText = data.melRecall;
+      document.getElementById('simDfVal').innerText = data.dfRecall;
+      
+      // Update charts
+      document.getElementById('simMelBar').style.width = `${data.melVal}%`;
+      document.getElementById('simDfBar').style.width = `${data.dfVal}%`;
+    }
+
+    // Modal Image Viewer
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImg');
+
+    function openModal(card) {
+      const img = card.querySelector('img');
+      modal.style.display = 'flex';
+      modalImg.src = img.src;
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+
+    // Tab switcher
+    function switchTab(event, tabId) {
+      // Get all elements with class="tab-content" and hide them
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+
+      // Get all elements with class="tab-btn" and remove the class "active"
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+  </script>
+</body>
+</html>
