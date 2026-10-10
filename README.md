@@ -260,6 +260,3 @@ We welcome contributions to expand the geometric analysis to more backbones.
 Distributed under the MIT License. See `LICENSE` for details.
 
 
-## Contact / Author
-*   **NC-MedAI Research Group**
-*   Project Link: [https://github.com/amaanali70/neural-collapse](https://github.com/amaanali70/neural-collapse)
