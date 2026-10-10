@@ -1,0 +1,30 @@
+# config/profiles/apple_silicon.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Hardware profile for Apple Silicon (M-series) Macs.
+#
+# Tuned for:
+#   - 16–36 GB unified memory
+#   - MPS backend
+#   - Developer workflow (fast iterations, stable execution)
+#
+# Applied via:  python train.py --profile apple_silicon
+# ─────────────────────────────────────────────────────────────────────────────
+
+system:
+  force_device: mps           # route through MPS
+  adaptive_memory: true       # enable memory-aware guards
+
+training:
+  batch_size: 32              # safe for 16 GB unified memory
+  num_workers: 4              # moderate; MPS shared-mem has overhead
+  mixed_precision: "off"      # MPS AMP not yet stable in all PyTorch versions
+
+nc_tracking:
+  enabled: true
+  every_n_epochs: 5           # reduce NC tracking overhead on unified memory
+
+analysis:
+  lightweight: true           # skip t-SNE/UMAP; use PCA only
+
+visualization:
+  max_embed_samples: 2000     # cap embeddings fed to t-SNE/UMAP

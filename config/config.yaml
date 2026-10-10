@@ -1,0 +1,127 @@
+# =============================================================================
+# DL_PROJ — Neural Collapse-Inspired Medical AI Research Framework
+# Master Configuration File
+# =============================================================================
+
+# ── Reproducibility ──────────────────────────────────────────────────────────
+seeds: [42, 123, 7]
+
+# ── Dataset ──────────────────────────────────────────────────────────────────
+dataset:
+  name: ham10000              # ham10000 | chestxray | retinal_oct | cifar10
+  root: ./data/raw
+  image_size: 224             # resize target (32 for CIFAR)
+  num_classes: 7              # HAM10000=7, ChestXRay=2, RetinalOCT=4, CIFAR=10
+  imbalance_ratios: [1, 5, 10, 20, 50, 100]   # for CIFAR sweep only
+
+# ── Medical dataset paths (set to your download location) ────────────────────
+medical:
+  ham10000:
+    csv_path: ./datasets/HAM10000/HAM10000_metadata.csv
+    img_dir: ./datasets/HAM10000/images
+  chestxray:
+    root: ./data/raw/chest_xray
+  retinal_oct:
+    root: ./data/raw/OCT2017
+
+# ── Sampling strategy ─────────────────────────────────────────────────────────
+sampling:
+  strategy: weighted          # weighted | balanced | square_root | progressive | none
+  progressive_warmup: 10      # epochs before progressive sampler reaches balance
+
+# ── Model ────────────────────────────────────────────────────────────────────
+model:
+  backbone: resnet18          # resnet18 | mobilenetv2
+  pretrained: true            # use ImageNet weights for medical tasks
+  feature_dim: 512
+  head: linear                # linear | etf | prototype
+
+# ── Training ─────────────────────────────────────────────────────────────────
+training:
+  epochs: 50
+  batch_size: 32
+  num_workers: 4              # auto-adjusted by device backend (see utils/device.py)
+  optimizer: SGD
+  lr: 0.01
+  momentum: 0.9
+  weight_decay: 1.0e-4
+  lr_schedule: cosine
+  warmup_epochs: 3
+  loss: focal                 # ce | weighted_ce | focal | supcon
+  mixed_precision: "auto"     # auto | off — CUDA→enabled, MPS/CPU→disabled
+
+# ── NC Regularization ─────────────────────────────────────────────────────────
+# IMPORTANT: Keep disabled by default. Only enable explicitly as a Phase-2
+# intervention via --override nc_regularization.enabled=true.
+# When enabled in baseline or etf runs without intent, it contaminates comparisons.
+nc_regularization:
+  enabled: false
+  collapse_weight: 0.01       # λ for within-class collapse penalty (NC1)
+  etf_align_weight: 0.01      # λ for ETF alignment penalty (NC2)
+
+# ── Focal Loss ────────────────────────────────────────────────────────────────
+focal_loss:
+  gamma: 2.0
+  alpha: null
+
+# ── ETF Classifier ────────────────────────────────────────────────────────────
+etf:
+  scale: 16.0
+  fix_backbone: false
+
+# ── Prototype Head ────────────────────────────────────────────────────────────
+prototype:
+  learnable: true
+  temperature: 0.07
+
+# ── Evaluation ────────────────────────────────────────────────────────────────
+evaluation:
+  nc_batch_size: 128
+  track_nc_every_n_epochs: 5  # 0 = only at end
+  compute_nc3: true
+  compute_nc4: true
+
+# ── NC Tracking (overrides evaluation.track_nc_every_n_epochs when enabled) ──
+nc_tracking:
+  enabled: true
+  every_n_epochs: 1            # track NC1-NC4 every epoch
+
+# ── Analysis mode ─────────────────────────────────────────────────────────────
+analysis:
+  lightweight: false           # true = skip t-SNE/PCA, reduce NC freq on CPU
+
+# ── Visualization ────────────────────────────────────────────────────────────
+visualization:
+  tsne_perplexity: 30
+  tsne_n_iter: 1000
+  umap_n_neighbors: 15
+  umap_min_dist: 0.1
+  pca_components: 50          # reduce to this before t-SNE / UMAP
+  save_embeddings: true
+  max_embed_samples: 5000     # cap samples fed to heavy visualizers (t-SNE/UMAP)
+
+# ── Experiment Tracking ───────────────────────────────────────────────────────
+tracking:
+  tensorboard: false          # disabled by default — CPU runs don't need overhead
+  log_dir: ./logs
+
+# ── Logging & Checkpointing ───────────────────────────────────────────────────
+logging:
+  results_dir: ./results
+  save_checkpoints: true
+  checkpoint_dir: ./checkpoints
+  log_every_n_epochs: 5
+
+# ── Sweep ─────────────────────────────────────────────────────────────────────
+sweep:
+  methods: [baseline, weighted_ce, focal, oversampling, etf, prototype]
+
+# ── System / Hardware ───────────────────────────────────────────────────────────
+system:
+  force_device: null          # null = auto-detect; "cuda" | "mps" | "cpu" to override
+  adaptive_memory: false      # warn on oversized batches, cap visualizer samples
+
+# ── Debug ─────────────────────────────────────────────────────────────────────
+debug:
+  enabled: false
+  fast_dev_batches: 0          # 0 = disabled; N = stop after N batches/epoch (smoke test)

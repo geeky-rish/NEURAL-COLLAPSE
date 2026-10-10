@@ -1,0 +1,32 @@
+# config/profiles/cpu_debug.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Hardware profile for CPU-only servers and CI validation.
+#
+# Tuned for:
+#   - No GPU available
+#   - Minimal memory usage
+#   - Fast iteration / smoke testing
+#
+# Applied via:  python train.py --profile cpu_debug
+# ─────────────────────────────────────────────────────────────────────────────
+
+system:
+  adaptive_memory: true       # warn on oversized batches
+
+training:
+  batch_size: 8               # conservative for CPU
+  num_workers: 2              # avoid process thrashing
+  mixed_precision: "off"      # no AMP on CPU
+
+debug:
+  fast_dev_batches: 10        # smoke test mode by default
+
+nc_tracking:
+  enabled: true
+  every_n_epochs: 1           # only 1 epoch anyway in debug mode
+
+analysis:
+  lightweight: true           # skip all heavy visualization
+
+visualization:
+  max_embed_samples: 500      # tiny sample cap

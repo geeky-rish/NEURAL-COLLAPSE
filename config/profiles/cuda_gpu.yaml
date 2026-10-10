@@ -1,0 +1,29 @@
+# config/profiles/cuda_gpu.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Hardware profile for CUDA GPU servers (cloud, on-prem, Colab).
+#
+# Tuned for:
+#   - ≥8 GB VRAM
+#   - Maximum throughput
+#   - Full visualization suite
+#
+# Applied via:  python train.py --profile cuda_gpu
+# ─────────────────────────────────────────────────────────────────────────────
+
+system:
+  adaptive_memory: false      # GPU VRAM managed separately by CUDA
+
+training:
+  batch_size: 64              # higher throughput with CUDA
+  num_workers: 8              # CUDA can saturate IO aggressively
+  mixed_precision: "auto"     # enable torch.cuda.amp when on CUDA
+
+nc_tracking:
+  enabled: true
+  every_n_epochs: 1           # track every epoch — GPU makes this cheap
+
+analysis:
+  lightweight: false          # full visualization suite available
+
+visualization:
+  max_embed_samples: 10000    # large embedding samples fine on GPU

@@ -1,0 +1,111 @@
+# =============================================================================
+# NC-MedAI — .gitignore
+# =============================================================================
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+# Keep the safe example template
+!.env.example
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# ── Build / packaging ─────────────────────────────────────────────────────────
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+pip-wheel-metadata/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env_dir/
+ENV/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+*.ipynb          # comment this out if you want to track notebooks
+
+# ── Data — never commit raw datasets (too large; use .gitkeep instead) ────────
+data/raw/
+data/processed/
+data/cache/
+*.csv.gz
+*.zip
+*.tar.gz
+*.tgz
+
+# Allow directory structure placeholders
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# ── Model weights & checkpoints ───────────────────────────────────────────────
+checkpoints/**
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.h5
+
+# Allow directory placeholders only
+!checkpoints/**/.gitkeep
+!checkpoints/.gitkeep
+
+# ── Results & logs (generated outputs) ───────────────────────────────────────
+results/**
+!results/pilot_plots/**
+!results/phase2/phase2_plots/**
+!results/reviewer_experiments/.gitkeep
+!results/.gitkeep
+logs/
+study_logs/**
+!study_logs/**/.gitkeep
+!study_logs/.gitkeep
+*.log
+*.csv         # sweep result CSVs are generated — exclude from repo
+!logs/.gitkeep
+
+# ── Plots / images (generated) ───────────────────────────────────────────────
+# (Allowed to track visual comparison plots and system diagrams)
+
+# ── TensorBoard ───────────────────────────────────────────────────────────────
+runs/
+events.out.tfevents.*
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── Mypy / type checking ──────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.orig
+scratch/
